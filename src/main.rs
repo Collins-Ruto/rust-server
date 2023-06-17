@@ -21,12 +21,12 @@ struct Message {
     pub username: String,
     pub message: String,
 }
-
+// method to handle form post requests to the server
 #[post("/message", data = "<form>")]
 fn post(form: Form<Message>, queue: &State<Sender<Message>>) {
     let _res = queue.send(form.into_inner());
 }
-
+// method to handle new messages and show it
 #[get("/events")]
 async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStream![] {
     let mut rx = queue.subscribe();
@@ -41,15 +41,14 @@ async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStrea
                 _ = &mut end => break,
             };
             yield Event::json(&msg);
-        }
+        } 
     }
 }
-
-
+// rocket cretes and runs the server
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .manage(channel::<Message>(1024).0)
-        .mount("/hello", routes![world, post, events])
-        .mount("/", FileServer::from(relative!("static")))
+        .mount("/hello", routes![world, post, events]) // expose routes throug /hello
+        .mount("/", FileServer::from(relative!("static"))) // mount static files including frontend
 }
