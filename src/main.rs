@@ -4,6 +4,7 @@ extern crate rocket;
 use rocket::{tokio::sync::broadcast::{channel, Sender, error::RecvError}, serde::{Serialize, Deserialize}, State, Shutdown, response::stream::{EventStream, Event}, fs::FileServer };
 use rocket::form::Form;
 use rocket::tokio::select;
+use rocket::fs::relative;
 
 #[get("/world")]
 fn world() -> &'static str {
@@ -27,11 +28,11 @@ fn post(form: Form<Message>, queue: &State<Sender<Message>>) {
 }
 
 #[get("/events")]
-async fn get(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStream![] {
+async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStream![] {
     let mut rx = queue.subscribe();
     EventStream! {
         loop {
-            let msh = select! {
+            let msg = select! {
                 msg = rx.recv() => match msg {
                     Ok(msg) => msg,
                     Err(RecvError::Closed) => break,
